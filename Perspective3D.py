@@ -1,6 +1,7 @@
 import math
 from PIL import Image
 import tkinter as tk
+import matplotlib.pyplot as plt
 
 class mods:
     # 文件打开
@@ -186,7 +187,11 @@ class sight_picture:
             content = content.split('\n')
             for i in range(len(content)):
                 content[i] = content[i].split(',')
-            
+            num = 0
+            for x in range(self.img_size[0]):
+                for y in range(self.img_size[1]):
+                    self.img.putpixel((x,y), content[num][3])
+                    num += 1
             # for j in range(self.img_size[0]/2*view/resolution,-(self.img_size[0]/2*view/resolution),-1):
             #     aim_x, aim_y, aim_z = (1-angle_up_down%90/90)*(1-angle_left_right%90/90), (angle_up_down%90/90), (angle_up_down%90/90)
             #     for k in pixel_list:
