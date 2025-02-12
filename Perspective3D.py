@@ -9,7 +9,7 @@ class mods:
             f.write(content)
 
     # 立体图形
-    def box(self, x_start, y_start, z_start, x_end, y_end, z_end, color=(255,255,255), resolution=5, slant_angle_x=0, slant_angle_y=0):# 正方体
+    def box(self, x_start, y_start, z_start, x_end, y_end, z_end, color=(255,255,255), resolution=5, slant_angle_x=0, slant_angle_y=0, slant_angle_z=0):  # 正方体
         center_x = (x_start + x_end) / 2
         center_y = (y_start + y_end) / 2
         center_z = (z_start + z_end) / 2
@@ -23,8 +23,13 @@ class mods:
                     # 使用三角函数计算倾斜后的 x 和 y 坐标
                     x_tilted = offset_x * math.cos(math.radians(slant_angle_x)) - offset_y * math.sin(math.radians(slant_angle_x))
                     y_tilted = offset_x * math.sin(math.radians(slant_angle_y)) + offset_y * math.cos(math.radians(slant_angle_y))
-                    x_abs = x_tilted + center_x
-                    y_abs = y_tilted + center_y
+                    # 计算在 z 轴方向上旋转后的坐标
+                    x_tilted_z = x_tilted * math.cos(math.radians(slant_angle_z)) - offset_z * math.sin(math.radians(slant_angle_z))
+                    y_tilted_z = y_tilted
+                    z_tilted = x_tilted * math.sin(math.radians(slant_angle_z)) + offset_z * math.cos(math.radians(slant_angle_z))
+                    x_abs = x_tilted_z + center_x
+                    y_abs = y_tilted_z + center_y
+                    z_abs = z_tilted + center_z
                     if x_end < x_start:
                         content = content + '\n' + str(-x_abs + x_start) + ','
                     else:
@@ -34,18 +39,14 @@ class mods:
                     else:
                         content = content + str(y_abs + y_start) + ','
                     if z_end < z_start:
-                        content = content + str(-z + z_start) + ','
+                        content = content + str(-z_abs + z_start) + ','
                     else:
-                        content = content + str(z + z_start) + ','
-        content = content + color
-        with open('pixel.txt', 'r') as f:
-            content = content + '\n' + f.read()
-            if len(f.read()) == 0:
-                content = content[1:]
+                        content = content + str(z_abs + z_start) + ','
+        content = content + str(color)
         return content
         
 
-    def cylinder(self, x, y, z, r, h, collor, resolution=5, slant_angle=90):# 圆柱体
+    def cylinder(self, x, y, z, r, h, color=(255,255,255), resolution=5, slant_angle=90):# 圆柱体
         content = ''
         for hg in range(round(h / resolution) + 1):
             for x_ in range(-r, r + 1):
@@ -54,12 +55,7 @@ class mods:
                     if dist <= r ** 2:
                         # 计算倾斜后的高度
                         slanted_h = hg * resolution - h + x_ * math.tan(math.radians(slant_angle))
-                        content += f'\n{x_},{slanted_h},{z_}'
-        content = content + color
-        with open('pixel.txt', 'r') as f:
-            existing_content = f.read().strip()
-        if existing_content:
-            content = existing_content + '\n' + content
+                        content += f'\n{x_},{slanted_h},{z_},{color}'
         return content
 
     def sphere(self, x, y, z, r,color, resolution = 5):# 圆球
@@ -69,7 +65,7 @@ class mods:
         content_1_list = content_1.split('\n')
         content_2_list = content_2.split('\n')
         for i in content_1_list:
-            if j in content_2_list:
+            if i in content_2_list:
                 content = content + i 
         with open('pixel.txt', 'r') as f:
             content = f.read() + content
@@ -78,10 +74,18 @@ class mods:
     # 建造
     def make_box(self, x_start, y_start, z_start, x_end, y_end, z_end, color, resolution=5, slant_angle_x=0, slant_angle_y=0):# 正方体
         content = self.box(x_start, y_start, z_start, x_end, y_end, z_end, color, resolution=resolution, slant_angle_x=slant_angle_x, slant_angle_y=slant_angle_y)
+        with open('pixel.txt', 'r') as f:
+            content = content + '\n' + f.read()
+            if len(f.read()) == 0:
+                content = content[1:]
         self.input_content(content, 'pixel.txt')
 
     def make_cylinder(self, x, y, z, r, h, color, resolution=5, slant_angle=0):# 圆柱体
         content = self.cylinder(x, y, z, r, h, color, resolution=resolution, slant_angle=slant_angle)
+        with open('pixel.txt', 'r') as f:
+            existing_content = f.read().strip()
+        if existing_content:
+            content = existing_content + '\n' + content
         self.input_content(content, 'pixel.txt')
 
 
@@ -99,7 +103,7 @@ class mods:
                 for j in range(len(linds)):
                     linds[j] = linds[j][:len(linds[j])]
                 for j in range(len(linds)):
-                    if int(i[0]) - int(linds[j].split(',')[0]) < resolution and int(i[1]) - int(linds[j].split(',')[1]) < resolution and int(i[2]) - int(linds[j].split(',')[2]) < resolution:
+                    if int(i.split(",")[0]) - int(linds[j].split(',')[0]) < resolution and int(i.split(",")[1]) - int(linds[j].split(',')[1]) < resolution and int(i.split(",")[2]) - int(linds[j].split(',')[2]) < resolution and i.split(",")[3] == linds[j].split(',')[3]:
                         pass
                     else:
                         linds_input = linds_input + linds[j]
@@ -177,11 +181,14 @@ class sight_picture:
         #             image_pixel_list.insert(j,i)
 
         # 绘画
-        for i in range(math.sqrt(((1-angle_up_down%90/90)*(1-angle_left_right%90/90))**2 + (angle_up_down%90/90)**2 + (angle_up_down%90/90)**2)*(view/resolution*100)//resolution+1, resolution, -resolution):
-            if angle_up_down//90<1:
-                if angle_left_right//90<1:
-                    for j in range(self.img_size[0]/2*view/resolution,-(self.img_size[0]/2*view/resolution),-1):
-                        aim_x, aim_y, aim_z = (1-angle_up_down%90/90)*(1-angle_left_right%90/90), (angle_up_down%90/90), (angle_up_down%90/90)
-                        for k in pixel_list:
-                            if abs(k[0]-aim_x)<=resolution and abs(k[1]-aim_y)<=resolution and abs(k[2]-aim_z)<=resolution:
-                                self.img.putpixel()
+        for i in range(round(math.sqrt(((1-angle_up_down%90/90)*(1-angle_left_right%90/90))**2 + (angle_up_down%90/90)**2 + (angle_up_down%90/90)**2)*(view/resolution*100)//resolution)+1, resolution, -resolution):
+            content = mods.box((1-angle_up_down%90/90)*(1-angle_left_right%90/90)*i+x, (angle_up_down%90/90)*i+y+self.img_size[1]/2*view, (angle_up_down%90/90)*i+z+self.img_size[0]/2*view, (1-angle_up_down%90/90)*(1-angle_left_right%90/90)*i+x+resolution, -(angle_up_down%90/90)*i+y+self.img_size[1]/2*view, -(angle_up_down%90/90)*i+z+self.img_size[0]/2*view, resolution=resolution, slant_angle_y=angle_up_down, slant_angle_z=angle_up_down)
+            content = content.split('\n')
+            for i in range(len(content)):
+                content[i] = content[i].split(',')
+            
+            # for j in range(self.img_size[0]/2*view/resolution,-(self.img_size[0]/2*view/resolution),-1):
+            #     aim_x, aim_y, aim_z = (1-angle_up_down%90/90)*(1-angle_left_right%90/90), (angle_up_down%90/90), (angle_up_down%90/90)
+            #     for k in pixel_list:
+            #         if abs(k[0]-aim_x)<=resolution and abs(k[1]-aim_y)<=resolution and abs(k[2]-aim_z)<=resolution:
+            #             self.img.putpixel()
