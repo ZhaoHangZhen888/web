@@ -43,7 +43,7 @@ class mods:
                         content = content + str(-z_abs + z_start) + ','
                     else:
                         content = content + str(z_abs + z_start) + ','
-        content = content + str(color)
+                    content = content + str(color)
         return content
         
 
@@ -124,7 +124,7 @@ class sight_picture:
     def __init__(self):
         # 打开图片
         self.img = Image.open(self.choose_image_according_to_resolution_size())
-        silf.img_size = self.img.size
+        self.img_size = self.img.size
         
     def get_screen_resolution(self):
         root = tk.Tk()
@@ -141,8 +141,29 @@ class sight_picture:
             return '16_9.png'
         else:
             return '4_3.png'
-            
-    def make_sight_picture(self, view, x, y, z, resolution=5, angle_left_right=0, angle_up_down=0):
+
+    def start_use(view, x,y,z):
+        while True:
+            self.make_sight_picture(view, x, y, z, resolution=5, angle_left_right=0, angle_up_down=0)
+
+    def resize_image_by_ratio(self, resolution, num, view, x, y, z, resized_img, angle_left_right=0, angle_up_down=0):
+        # 计算新的宽度和高度
+        new_width = int(self.img_size[0] - self.img_size[0]*view/resolution)
+        new_height = int(self.img_size[1] - self.img_size[1]*view/resolution)
+        # 按新的尺寸进行缩放
+        resized_img = img.resize((new_width, new_height), Image.LANCZOS)
+        # 保存缩放后的图片
+        resized_img.save("sight_picture\\"+str(num)+'.png')
+        if(num<view/resolution):
+            num += 1
+            return make_sight_picture(view, x, y, z, resolution=resolution, angle_left_right=angle_left_right, angle_up_down=angle_up_down, num=num)
+        else:
+            resized_img.save('sight.png')
+    
+    def make_sight_picture(self, view, x, y, z, resolution=5, angle_left_right=0, angle_up_down=0, num=0):
+        if num != 0:
+            img = Image.open('sight_image\\'+str(num) + '.png')
+            img_size = img.size
         """
         初始角度面向x维度线
         view为视角距离
@@ -183,17 +204,20 @@ class sight_picture:
 
         # 绘画
         for i in range(round(math.sqrt(((1-angle_up_down%90/90)*(1-angle_left_right%90/90))**2 + (angle_up_down%90/90)**2 + (angle_up_down%90/90)**2)*(view/resolution*100)//resolution)+1, resolution, -resolution):
-            content = mods.box((1-angle_up_down%90/90)*(1-angle_left_right%90/90)*i+x, (angle_up_down%90/90)*i+y+self.img_size[1]/2*view, (angle_up_down%90/90)*i+z+self.img_size[0]/2*view, (1-angle_up_down%90/90)*(1-angle_left_right%90/90)*i+x+resolution, -(angle_up_down%90/90)*i+y+self.img_size[1]/2*view, -(angle_up_down%90/90)*i+z+self.img_size[0]/2*view, resolution=resolution, slant_angle_y=angle_up_down, slant_angle_z=angle_up_down)
+            content = mods.box((1-angle_up_down%90/90)*(1-angle_left_right%90/90)*i+x, (angle_up_down%90/90)*i+y+img_size[1]*view, (angle_up_down%90/90)*i+z+img_size[0]*view, (1-angle_up_down%90/90)*(1-angle_left_right%90/90)*i+x+resolution, -(angle_up_down%90/90)*i+y+img_size[1]*view, -(angle_up_down%90/90)*i+z+img_size[0]*view, resolution=resolution, slant_angle_y=angle_up_down, slant_angle_z=angle_up_down)
             content = content.split('\n')
             for i in range(len(content)):
                 content[i] = content[i].split(',')
-            num = 0
-            for x in range(self.img_size[0]):
-                for y in range(self.img_size[1]):
-                    self.img.putpixel((x,y), content[num][3])
-                    num += 1
-            # for j in range(self.img_size[0]/2*view/resolution,-(self.img_size[0]/2*view/resolution),-1):
+            n = 0
+            for x in range(img_size[0]*view/resolution,-(img_size[0]*view/resolution),-1):
+                for y in range(img_size[1]*view/resolution,-(img_size[1]*view/resolution),-1):
+                    img.putpixel((x,y), content[num][3])
+                    n += 1
+
+        #远近视角叠加
+        self.resize_image_by_ratio(resolution, num, view, x, y, z, 'sight_image\\'+str(num)+'.png', angle_left_right=angle_left_right, angle_up_down=angle_up_down)
+            # for j in range(img_size[0]/2*view/resolution,-(img_size[0]/2*view/resolution),-1):
             #     aim_x, aim_y, aim_z = (1-angle_up_down%90/90)*(1-angle_left_right%90/90), (angle_up_down%90/90), (angle_up_down%90/90)
             #     for k in pixel_list:
             #         if abs(k[0]-aim_x)<=resolution and abs(k[1]-aim_y)<=resolution and abs(k[2]-aim_z)<=resolution:
-            #             self.img.putpixel()
+            #             img.putpixel()
